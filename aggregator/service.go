@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/betelgeusexru/golang-toll-calculator/types"
+	"github.com/sirupsen/logrus"
 )
 
 const basePrice = 3.15
@@ -29,14 +30,18 @@ func NewInvoiceAggregator(store Storer) Aggregator {
 }
 
 func (i *InvoiceAggregator) AggregateDistance(distance types.Distance) error {
-	fmt.Println("processing and inserting distance in the storage: ", distance)
+	logrus.WithFields(logrus.Fields{
+		"obuid": distance.OBUID,
+		"distance": distance.Value,
+		"unix": distance.Unix,
+	}).Info("aggregating distance")
 	return i.store.Insert(distance)
 }
 
 func (i *InvoiceAggregator) CalculateInvoice(obuID int) (*types.Invoice, error) {
 	dist, err := i.store.Get(obuID)
 	if err != nil {
-		return nil, fmt.Errorf("obu id not found", obuID)
+		return nil, fmt.Errorf("obu id not found %d", obuID)
 	}
 
 	inv := &types.Invoice{

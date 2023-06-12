@@ -6,6 +6,7 @@ import (
 	"flag"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/betelgeusexru/golang-toll-calculator/aggregator/client"
 	"github.com/sirupsen/logrus"
@@ -15,9 +16,10 @@ type apiFunc func (w http.ResponseWriter, r *http.Request) error
 
 func Main() {
 	listenAddr := flag.String("listenAddr", ":6000", "the listen address of the HTTP server")
+	aggregatorServiceAddr := flag.String("aggServiceAddr", "http://localhost:3000", "the listen address of the aggregator service")
 	flag.Parse()
 	
-	client := client.NewHTTPClient("http://localhost:3000")
+	client := client.NewHTTPClient(*aggregatorServiceAddr)
 	invHandler := NewInvoiceHandler(client)
 
 	http.HandleFunc("/invoice", makeAPIFunc(invHandler.handleGetInvoice) )
@@ -52,6 +54,13 @@ func writeJSON(w http.ResponseWriter, code int, v any) error {
 
 func makeAPIFunc(fn apiFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		defer func(start time.Time){
+			logrus.WithFields(logrus.Fields{
+				"took": time.Since(start),
+				"uri": r.RequestURI,
+			}).Info("REQ :: ")
+		}(time.Now())
+		
 		if err := fn(w, r); err != nil {
 			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		}

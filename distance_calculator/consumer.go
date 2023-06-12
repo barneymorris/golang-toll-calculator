@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"time"
 
@@ -14,10 +15,10 @@ type KafkaConsumer struct {
 	Consumer *kafka.Consumer
 	IsRunning bool
 	CalcService CalculatorServicer
-	AggClient *client.HTTPClient
+	AggClient client.Client
 }
 
-func NewKafkaConsumer(topic string, svc CalculatorServicer, aggClient *client.HTTPClient) (*KafkaConsumer, error) {
+func NewKafkaConsumer(topic string, svc CalculatorServicer, aggClient client.Client) (*KafkaConsumer, error) {
 	c, err := kafka.NewConsumer(&kafka.ConfigMap{
 		"bootstrap.servers": "localhost",
 		"group.id":          "myGroup",
@@ -63,12 +64,12 @@ func (c *KafkaConsumer) ReadMessageLoop() {
 			continue
 		}
 
-		req := types.Distance{
+		req := &types.AggregateRequest{
 			Value: distance,
 			Unix: time.Now().UnixNano(),
-			OBUID: data.OBUID,
+			ObuID: int32(data.OBUID),
 		}
-		if err := c.AggClient.AggregateInvoice(req); err != nil {
+		if err := c.AggClient.Aggregate(context.Background(), req); err != nil {
 			logrus.Errorf("aggregate error: ", err)
 			continue
 		}

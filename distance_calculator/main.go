@@ -7,7 +7,7 @@ import (
 )
 
 const kafkaTopic = "obudata"
-const aggregatorEndpoint = "http://127.0.0.1:3000/aggregate"
+const aggregatorEndpoint = "http://127.0.0.1:3000"
 
 func main() {
 	var (
@@ -24,9 +24,9 @@ func main() {
 		log.Fatal(err)
 	}
 
-	_ = httpClient
+	_ = grpcClient
 
-	kafkaConsumer, err := NewKafkaConsumer(kafkaTopic, svc, grpcClient)
+	kafkaConsumer, err := NewKafkaConsumer(kafkaTopic, svc, httpClient)
 	if err != nil {
 		log.Fatal(err)
 	}
